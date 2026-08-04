@@ -21,3 +21,7 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Config local de ferramentas de IDE/tooling — não é parte do projeto
+.claude/
+CLAUDE.md
