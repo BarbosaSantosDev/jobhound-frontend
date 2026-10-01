@@ -55,19 +55,26 @@ function matchesQuery(job, q) {
     .every((term) => hay.includes(term));
 }
 
-function summaryLine(jobs, pipeline) {
+function summaryLine(jobs, lastRun) {
   const high = jobs.filter((j) => j.score >= HIGH_MATCH).length;
   const highText = `${high} com match alto`;
-  // "desde o último faro" só quando a API informa quando ele começou.
-  if (pipeline.started_at) {
-    const since = new Date(pipeline.started_at).getTime();
-    const fresh = jobs.filter((j) => new Date(j.fetchedAt).getTime() >= since).length;
+  // "novas" = o que o último faro deste perfil trouxe para avaliação.
+  if (lastRun) {
+    const fresh = lastRun.fetched;
     return `${fresh} ${fresh === 1 ? "nova" : "novas"} desde o último faro, ${highText}`;
   }
   return `${jobs.length} ${jobs.length === 1 ? "vaga farejada" : "vagas farejadas"}, ${highText}`;
 }
 
-export default function JobsView({ jobsState, pipeline, lastRunAt, busy, onRun, onRetry, onStage, hasProfile, onGoProfile }) {
+// "3 fontes ok" quando tudo foi bem; senão, nomeia as que falharam.
+function sourcesLine(lastRun) {
+  if (!lastRun?.sources?.length) return null;
+  const failed = lastRun.sources.filter((s) => !s.ok);
+  if (!failed.length) return { text: `${lastRun.sources.length} ${lastRun.sources.length === 1 ? "fonte ok" : "fontes ok"}`, ok: true };
+  return { text: `${failed.map((s) => s.name).join(", ")} ${failed.length === 1 ? "falhou" : "falharam"}`, ok: false };
+}
+
+export default function JobsView({ jobsState, pipeline, lastRun, lastRunAt, busy, onRun, onRetry, onStage, hasProfile, onGoProfile }) {
   const { status, jobs } = jobsState;
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState("new");
@@ -159,6 +166,8 @@ export default function JobsView({ jobsState, pipeline, lastRunAt, busy, onRun, 
   );
 
   const setFilter = (key) => (value) => setFilters((f) => ({ ...f, [key]: value }));
+  const sources = sourcesLine(lastRun);
+  const runFailed = lastRun ? lastRun.status === "failed" : Boolean(pipeline.last_error);
   const filtersActive = query || JSON.stringify(filters) !== JSON.stringify(DEFAULT_FILTERS);
 
   return (
@@ -198,7 +207,10 @@ export default function JobsView({ jobsState, pipeline, lastRunAt, busy, onRun, 
                 : lastRunAt
                   ? formatDateTime(lastRunAt)
                   : "nunca"}
-              {!busy && pipeline.last_error && <span className={styles.failed}> · falhou</span>}
+              {!busy && runFailed && <span className={styles.failed}> · falhou</span>}
+              {!busy && !runFailed && sources && (
+                <span className={sources.ok ? undefined : styles.failed}> · {sources.text}</span>
+              )}
             </span>
           </div>
           <Button variant="primary" icon="play" loading={busy} disabled={busy || !hasProfile} onClick={onRun}>
@@ -210,7 +222,7 @@ export default function JobsView({ jobsState, pipeline, lastRunAt, busy, onRun, 
       <header className={styles.header}>
         <div className={styles.titleRow}>
           <h1 className={styles.title}>Vagas</h1>
-          {status === "ok" && jobs.length > 0 && <p className={styles.summary}>{summaryLine(jobs, pipeline)}</p>}
+          {status === "ok" && jobs.length > 0 && <p className={styles.summary}>{summaryLine(jobs, lastRun)}</p>}
         </div>
         <Tabs label="Etapas" tabs={tabs} value={tab} onChange={setTab} panelId="jobs-panel" />
         <div className={styles.filters}>

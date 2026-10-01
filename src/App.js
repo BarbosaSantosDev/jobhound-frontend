@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { adaptMatch, toProfileBody } from "./api/adapters";
 import { api, ApiError } from "./api/client";
 import Toast from "./components/Toast";
@@ -12,25 +12,30 @@ const POLL_MS = 3_000;
 // no meio do POST leria running:false e daria o faro por encerrado cedo demais.
 const START_GRACE_MS = 8_000;
 const SLUG_KEY = "jobhound.profileSlug";
-const KNOWN_KEY = "jobhound.knownProfiles";
 
-const EMPTY_PIPELINE = { running: false, stage: null, started_at: null, finished_at: null, last_error: null };
+const EMPTY_PIPELINE = {
+  running: false,
+  profile: null,
+  stage: null,
+  started_at: null,
+  finished_at: null,
+  last_error: null,
+  last_run: null,
+};
 
-function readStorage(key, fallback) {
+function readSlug() {
   try {
-    const raw = window.localStorage.getItem(key);
-    return raw === null ? fallback : JSON.parse(raw);
+    return JSON.parse(window.localStorage.getItem(SLUG_KEY));
   } catch {
-    return fallback;
+    return null;
   }
 }
 
-function writeStorage(key, value) {
+function writeSlug(slug) {
   try {
-    if (value === null) window.localStorage.removeItem(key);
-    else window.localStorage.setItem(key, JSON.stringify(value));
+    window.localStorage.setItem(SLUG_KEY, JSON.stringify(slug));
   } catch {
-    // storage indisponível: segue só em memória
+    // storage indisponível: o perfil ativo vale só nesta sessão
   }
 }
 
@@ -39,26 +44,14 @@ function describeError(err) {
   return "a API não respondeu";
 }
 
-function profileSummary(p) {
-  return { slug: p.slug, name: p.name, seniority: p.seniority, primary_stack: p.primary_stack };
-}
-
-function latest(...isoDates) {
-  const valid = isoDates.filter(Boolean);
-  if (!valid.length) return null;
-  return valid.reduce((a, b) => (new Date(a) > new Date(b) ? a : b));
-}
-
 export default function App() {
   const [theme, setTheme] = useTheme();
-  const initialSlug = useMemo(() => readStorage(SLUG_KEY, null), []);
 
   const [view, setView] = useState("jobs");
-  const [profileMode, setProfileMode] = useState(initialSlug ? "edit" : "new");
-  const [profileState, setProfileState] = useState(
-    initialSlug ? { status: "loading", slug: initialSlug, data: null } : { status: "none", slug: null, data: null },
-  );
-  const [knownProfiles, setKnownProfiles] = useState(() => readStorage(KNOWN_KEY, []));
+  const [profileMode, setProfileMode] = useState("edit");
+  // status: loading | ok | error | none (nenhum perfil cadastrado)
+  const [profileState, setProfileState] = useState({ status: "loading", slug: readSlug(), data: null });
+  const [profiles, setProfiles] = useState([]);
   const [saving, setSaving] = useState(false);
 
   const [jobsState, setJobsState] = useState({ status: "loading", jobs: [], error: null });
@@ -70,6 +63,16 @@ export default function App() {
   const toastTimer = useRef(null);
   const profileDirty = useRef(false);
   const runRef = useRef({ startedAt: null, sawRunning: false });
+  // Etapas mudadas aqui e ainda não refletidas por um poll: jobId → {stage, settledAt}.
+  // Um poll que saiu ANTES do PATCH terminar traz o estado velho; sem isto, a
+  // vaga "pularia de volta" de aba até o poll seguinte.
+  const pendingStages = useRef(new Map());
+
+  // Vagas, stats e faro são sempre do perfil ativo. Sem perfil carregado
+  // (ainda carregando, erro ou nenhum cadastrado), não há escopo para pedir.
+  const activeSlug = profileState.status === "ok" ? profileState.slug : null;
+  const activeSlugRef = useRef(activeSlug);
+  activeSlugRef.current = activeSlug;
 
   const notify = useCallback((message, tone = "ok") => {
     clearTimeout(toastTimer.current);
@@ -78,49 +81,55 @@ export default function App() {
   }, []);
   useEffect(() => () => clearTimeout(toastTimer.current), []);
 
-  const rememberProfile = useCallback((p) => {
-    setKnownProfiles((list) => {
-      const next = [profileSummary(p), ...list.filter((x) => x.slug !== p.slug)];
-      writeStorage(KNOWN_KEY, next);
-      return next;
-    });
+  // ── perfis ────────────────────────────────────────────────
+  const refreshProfiles = useCallback(async () => {
+    try {
+      const list = await api.listProfiles();
+      setProfiles(list);
+      return list;
+    } catch {
+      return null;
+    }
   }, []);
 
-  const forgetProfile = useCallback((slug) => {
-    setKnownProfiles((list) => {
-      const next = list.filter((x) => x.slug !== slug);
-      writeStorage(KNOWN_KEY, next);
-      return next;
-    });
+  const loadProfile = useCallback(async (slug) => {
+    setProfileState({ status: "loading", slug, data: null });
+    try {
+      const data = await api.getProfile(slug);
+      setProfileState({ status: "ok", slug: data.slug, data });
+      writeSlug(data.slug);
+    } catch (err) {
+      setProfileState({ status: "error", slug, data: null, error: describeError(err) });
+    }
   }, []);
 
-  // ── perfil ────────────────────────────────────────────────
-  const loadProfile = useCallback(
-    async (slug) => {
-      setProfileState({ status: "loading", slug, data: null });
-      try {
-        const data = await api.getProfile(slug);
-        setProfileState({ status: "ok", slug: data.slug, data });
-        writeStorage(SLUG_KEY, data.slug);
-        rememberProfile(data);
-      } catch (err) {
-        if (err instanceof ApiError && err.status === 404) forgetProfile(slug);
-        setProfileState({ status: "error", slug, data: null, error: describeError(err) });
-      }
-    },
-    [rememberProfile, forgetProfile],
-  );
-
+  // Abre no perfil salvo neste navegador; senão, no editado por último (o mesmo
+  // que o backend usa por padrão). Sem nenhum perfil, vai direto para "novo".
   useEffect(() => {
-    if (initialSlug) loadProfile(initialSlug);
-  }, [initialSlug, loadProfile]);
+    (async () => {
+      const list = await refreshProfiles();
+      const stored = readSlug();
+      if (list === null) {
+        if (stored) loadProfile(stored);
+        else setProfileState({ status: "error", slug: null, data: null, error: describeError(null) });
+        return;
+      }
+      const slug = list.some((p) => p.slug === stored) ? stored : list[0]?.slug;
+      if (slug) {
+        loadProfile(slug);
+      } else {
+        setProfileState({ status: "none", slug: null, data: null });
+        setProfileMode("new");
+      }
+    })();
+  }, [refreshProfiles, loadProfile]);
 
   const saveProfile = async (form) => {
     setSaving(true);
     try {
       const data = await api.updateProfile(profileState.slug, toProfileBody(form));
       setProfileState({ status: "ok", slug: data.slug, data });
-      rememberProfile(data);
+      refreshProfiles();
       notify("Perfil salvo. O próximo faro já usa as novas preferências.");
       return true;
     } catch (err) {
@@ -137,8 +146,8 @@ export default function App() {
       const data = await api.createProfile(toProfileBody(form));
       profileDirty.current = false;
       setProfileState({ status: "ok", slug: data.slug, data });
-      writeStorage(SLUG_KEY, data.slug);
-      rememberProfile(data);
+      writeSlug(data.slug);
+      refreshProfiles();
       setProfileMode("edit");
       notify(`Perfil ${data.slug} registrado.`);
     } catch (err) {
@@ -174,7 +183,10 @@ export default function App() {
   const switchProfile = (slug) => {
     if (view === "profile" && !confirmLeave()) return;
     setProfileMode("edit");
-    if (slug !== profileState.slug || profileState.status !== "ok") loadProfile(slug);
+    if (slug !== profileState.slug || profileState.status !== "ok") {
+      setJobsState({ status: "loading", jobs: [], error: null });
+      loadProfile(slug);
+    }
   };
 
   const goToProfile = () => {
@@ -189,9 +201,24 @@ export default function App() {
 
   // ── vagas + pipeline ──────────────────────────────────────
   const loadJobs = useCallback(async () => {
+    const slug = activeSlugRef.current;
+    if (!slug) return;
+    const requestedAt = Date.now();
     try {
-      const [matches, s] = await Promise.all([api.matches(), api.stats()]);
-      setJobsState({ status: "ok", jobs: matches.map(adaptMatch), error: null });
+      const [matches, s] = await Promise.all([api.matches(slug), api.stats(slug)]);
+      if (activeSlugRef.current !== slug) return; // trocou de perfil no meio
+      const pending = pendingStages.current;
+      const jobs = matches.map((m) => {
+        const job = adaptMatch(m);
+        const p = pending.get(job.id);
+        if (!p) return job;
+        if (p.settledAt !== null && requestedAt >= p.settledAt) {
+          pending.delete(job.id); // este poll já viu o PATCH aplicado
+          return job;
+        }
+        return { ...job, stage: p.stage };
+      });
+      setJobsState({ status: "ok", jobs, error: null });
       setStats(s);
     } catch (err) {
       // Depois do primeiro sucesso, uma falha de poll não apaga a lista.
@@ -200,6 +227,15 @@ export default function App() {
       );
     }
   }, []);
+
+  // Sem perfil, a tela de vagas não fica presa no skeleton.
+  useEffect(() => {
+    if (profileState.status === "none") setJobsState({ status: "ok", jobs: [], error: null });
+    if (profileState.status === "error") {
+      setJobsState({ status: "error", jobs: [], error: `Não consegui carregar o perfil: ${profileState.error}.` });
+    }
+    if (activeSlug) loadJobs();
+  }, [activeSlug, profileState.status, profileState.error, loadJobs]);
 
   const finishRun = useCallback(
     (status) => {
@@ -216,7 +252,7 @@ export default function App() {
     loadJobs();
     let status;
     try {
-      status = await api.pipelineStatus();
+      status = await api.pipelineStatus(activeSlugRef.current);
     } catch {
       return;
     }
@@ -253,11 +289,11 @@ export default function App() {
   const busy = pipeline.running || starting;
 
   const runPipeline = async () => {
-    if (busy) return;
+    if (busy || !activeSlug) return;
     runRef.current = { startedAt: Date.now(), sawRunning: false };
     setStarting(true);
     try {
-      const result = await api.runPipeline();
+      const result = await api.runPipeline(activeSlug);
       if (result === "already-running") {
         runRef.current.sawRunning = true;
         notify("Já tinha um faro em andamento. Acompanhando daqui.");
@@ -269,16 +305,28 @@ export default function App() {
     }
   };
 
-  // ── derivados ─────────────────────────────────────────────
-  const jobs = jobsState.jobs;
-  const newCount = useMemo(() => {
-    if (jobs.some((j) => j.stage != null)) return jobs.filter((j) => j.stage === "new").length;
-    if (!pipeline.started_at) return 0;
-    const since = new Date(pipeline.started_at).getTime();
-    return jobs.filter((j) => new Date(j.fetchedAt).getTime() >= since).length;
-  }, [jobs, pipeline.started_at]);
+  // Triagem otimista: a vaga muda de aba na hora; se a API recusar, volta.
+  const changeStage = async (jobId, stage) => {
+    const previous = jobsState.jobs.find((j) => j.id === jobId)?.stage;
+    const apply = (to) =>
+      setJobsState((s) => ({ ...s, jobs: s.jobs.map((j) => (j.id === jobId ? { ...j, stage: to } : j)) }));
+    const pending = pendingStages.current;
+    pending.set(jobId, { stage, settledAt: null });
+    apply(stage);
+    try {
+      await api.setStage(jobId, stage, activeSlug);
+      if (pending.get(jobId)?.stage === stage) pending.set(jobId, { stage, settledAt: Date.now() });
+    } catch (err) {
+      if (pending.get(jobId)?.stage === stage) pending.delete(jobId);
+      apply(previous);
+      notify(`Não foi possível mover a vaga: ${describeError(err)}.`, "error");
+    }
+  };
 
+  // ── derivados ─────────────────────────────────────────────
+  const newCount = jobsState.jobs.filter((j) => j.stage === "new").length;
   const activeProfile = profileState.status === "ok" ? profileState.data : null;
+  const lastRun = pipeline.last_run;
 
   return (
     <>
@@ -290,10 +338,9 @@ export default function App() {
         onThemeChange={setTheme}
         switcher={{
           active: activeProfile,
-          profiles: knownProfiles,
+          profiles,
           onSelect: switchProfile,
           onNew: startNewProfile,
-          onLoadSlug: switchProfile,
         }}
       >
         <main>
@@ -301,14 +348,16 @@ export default function App() {
             <JobsView
               jobsState={jobsState}
               pipeline={pipeline}
-              lastRunAt={latest(pipeline.finished_at, stats?.last_run)}
+              lastRun={lastRun}
+              lastRunAt={lastRun?.finished_at ?? stats?.last_run ?? null}
               busy={busy}
               onRun={runPipeline}
               onRetry={() => {
                 setJobsState({ status: "loading", jobs: [], error: null });
-                loadJobs();
+                if (profileState.status === "error") loadProfile(profileState.slug);
+                else loadJobs();
               }}
-              onStage={null /* PATCH de etapa ainda não existe na API */}
+              onStage={changeStage}
               hasProfile={Boolean(activeProfile)}
               onGoProfile={goToProfile}
             />

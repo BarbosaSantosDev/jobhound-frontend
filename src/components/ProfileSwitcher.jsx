@@ -11,15 +11,12 @@ function subtitle(p) {
   return [p.seniority, p.primary_stack?.[0]?.toLowerCase()].filter(Boolean).join(" · ");
 }
 
-// profiles: perfis conhecidos. Enquanto a API não lista perfis, são os que
-// este navegador já carregou ou registrou. onLoadSlug cobre o resto.
-export default function ProfileSwitcher({ active, profiles, onSelect, onNew, onLoadSlug }) {
+// profiles: lista de GET /api/v1/profiles (editado por último primeiro).
+export default function ProfileSwitcher({ active, profiles, onSelect, onNew }) {
   const [open, setOpen] = useState(false);
-  const [slugDraft, setSlugDraft] = useState("");
   const rootRef = useRef(null);
   const triggerRef = useRef(null);
   const menuId = useId();
-  const slugId = useId();
 
   useEffect(() => {
     if (!open) return undefined;
@@ -41,14 +38,6 @@ export default function ProfileSwitcher({ active, profiles, onSelect, onNew, onL
   const close = (fn) => (...args) => {
     setOpen(false);
     fn(...args);
-  };
-
-  const submitSlug = (e) => {
-    e.preventDefault();
-    const slug = slugDraft.trim();
-    if (!slug) return;
-    setSlugDraft("");
-    close(onLoadSlug)(slug);
   };
 
   return (
@@ -101,19 +90,6 @@ export default function ProfileSwitcher({ active, profiles, onSelect, onNew, onL
             <Icon name="plus" />
             Novo perfil
           </button>
-          <form className={styles.slugForm} onSubmit={submitSlug}>
-            <label htmlFor={slugId} className={`mono ${styles.slugLabel}`}>
-              carregar por slug
-            </label>
-            <input
-              id={slugId}
-              className={`mono ${styles.slugInput}`}
-              value={slugDraft}
-              onChange={(e) => setSlugDraft(e.target.value)}
-              placeholder="slug-do-perfil"
-              autoComplete="off"
-            />
-          </form>
         </div>
       )}
     </div>
