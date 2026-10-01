@@ -9,6 +9,9 @@ const BLOCKING_FLAGS = {
 
 export const STAGES = ["new", "saved", "applied", "discarded"];
 
+// work_mode da API → rótulo da UI; "not_informed" vira null (não exibe).
+const WORK_MODE_LABEL = { remote: "remoto", hybrid: "híbrido", onsite: "presencial" };
+
 function verdictOf(result) {
   const blocking = (result.red_flags || []).filter((f) => f in BLOCKING_FLAGS);
   if (blocking.length) {
@@ -19,8 +22,8 @@ function verdictOf(result) {
   return { key: "low", label: "baixo faro" };
 }
 
-// Motivos estruturados ({kind, text}) viram prós/contras; motivos em texto
-// puro (formato atual da API) não têm polaridade e ficam como observações.
+// Motivos {kind, text} viram prós/contras/observações. Texto puro (API antiga,
+// sem polaridade) fica como observação.
 function splitReasons(reasons = []) {
   const pros = [];
   const cons = [];
@@ -43,14 +46,16 @@ export function adaptMatch({ job, result }) {
     source: job.source,
     url: job.url,
     fetchedAt: job.fetched_at,
-    workMode: job.work_mode ?? null,
+    workMode: WORK_MODE_LABEL[result.work_mode] ?? null,
     summary: job.summary ?? null,
-    stage: STAGES.includes(result.stage ?? job.stage) ? (result.stage ?? job.stage) : null,
+    stage: STAGES.includes(result.stage) ? result.stage : null,
     score: result.score / 100,
     verdict: verdictOf(result),
     ...splitReasons(result.reasons),
   };
 }
+
+export const ALL_SOURCES = ["gupy", "nerdin", "remoteok"];
 
 export const EMPTY_PROFILE_FORM = {
   name: "",
@@ -61,6 +66,7 @@ export const EMPTY_PROFILE_FORM = {
   secondary_stack: [],
   preferred_locations: [],
   accepts_remote: true,
+  enabled_sources: ALL_SOURCES,
 };
 
 export function toProfileForm(profile) {
@@ -73,6 +79,7 @@ export function toProfileForm(profile) {
     secondary_stack: profile.secondary_stack ?? [],
     preferred_locations: profile.preferred_locations ?? [],
     accepts_remote: profile.accepts_remote ?? true,
+    enabled_sources: profile.enabled_sources ?? ALL_SOURCES,
   };
 }
 
