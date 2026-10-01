@@ -1,0 +1,159 @@
+.shell {
+  min-height: 100vh;
+}
+
+.sidebar {
+  position: fixed;
+  z-index: 30;
+  inset: 0 auto 0 0;
+  width: var(--sidebar-width);
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 20px 14px;
+  background: var(--side);
+  border-right: 1px solid var(--line);
+  overflow-y: auto;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px 0;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: var(--touch);
+  padding: 0 12px;
+  border-radius: var(--radius-control);
+  border: 0;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 15px;
+  font-weight: 400;
+  text-align: left;
+}
+
+.navItem:hover:not(.current) {
+  background: var(--subtle);
+  color: var(--text);
+}
+
+.current {
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 800;
+  box-shadow: var(--shadow);
+}
+
+[data-theme="escuro"] .current {
+  background: var(--subtle);
+}
+
+.navIcon {
+  color: var(--muted);
+}
+
+.current .navIcon {
+  color: var(--accent-text);
+}
+
+.badge {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.footer {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.footerLabel {
+  padding-left: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.main {
+  margin-left: var(--sidebar-width);
+  min-height: 100vh;
+}
+
+.topbar,
+.backdrop,
+.closeButton {
+  display: none;
+}
+
+@media (max-width: 899px) {
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .menuButton,
+  .closeButton {
+    display: grid;
+    place-items: center;
+    width: var(--touch);
+    height: var(--touch);
+    border: 0;
+    border-radius: var(--radius-control);
+    background: transparent;
+    color: var(--text);
+  }
+
+  .menuButton {
+    margin-left: -10px;
+  }
+
+  .sidebar {
+    width: min(300px, 85vw);
+    transform: translateX(-100%);
+    visibility: hidden;
+    transition: transform 180ms ease, visibility 0s linear 180ms;
+  }
+
+  .open {
+    transform: none;
+    visibility: visible;
+    transition: transform 180ms ease;
+  }
+
+  .backdrop {
+    display: block;
+    position: fixed;
+    z-index: 25;
+    inset: 0;
+    background: rgba(11, 10, 8, 0.55);
+  }
+
+  .main {
+    margin-left: 0;
+  }
+}
