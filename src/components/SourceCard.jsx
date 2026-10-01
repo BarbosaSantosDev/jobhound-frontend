@@ -2,8 +2,9 @@ import { useId } from "react";
 import Icon from "./Icon";
 import styles from "./SourceCard.module.css";
 
-// Card de fonte: o card inteiro é o <label> do checkbox.
-export default function SourceCard({ name, description, checked, onChange, disabled = false }) {
+// Card de fonte: o card inteiro é o <label> do checkbox. `status` é o rótulo
+// mono do rodapé; por padrão, ATIVA/DESLIGADA conforme `checked`.
+export default function SourceCard({ name, description, checked, onChange, disabled = false, status }) {
   const id = useId();
   return (
     <label
@@ -25,7 +26,7 @@ export default function SourceCard({ name, description, checked, onChange, disab
         </span>
       </span>
       <span className={styles.description}>{description}</span>
-      <span className={`mono ${styles.status}`}>{checked ? "ATIVA" : "DESLIGADA"}</span>
+      <span className={`mono ${styles.status}`}>{status ?? (checked ? "ATIVA" : "DESLIGADA")}</span>
     </label>
   );
 }

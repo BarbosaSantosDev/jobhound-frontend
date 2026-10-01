@@ -8,7 +8,7 @@ import SourceCard from "../components/SourceCard";
 import Switch from "../components/Switch";
 import { faroCommandLines } from "../lib/faroCommand";
 import { slugify } from "../lib/format";
-import { derivedActiveSources, SOURCES } from "../lib/sources";
+import { activeSources as computeActiveSources, SOURCES, sourcesWithTerms } from "../lib/sources";
 import styles from "./ProfileView.module.css";
 
 const SENIORITY = ["junior", "pleno", "senior"].map((v) => ({ value: v, label: v }));
@@ -86,7 +86,8 @@ export default function ProfileView({ mode, profileState, saving, onSave, onCrea
   }, [baseline]);
 
   const dirty = JSON.stringify(form) !== JSON.stringify(baseline);
-  const activeSources = derivedActiveSources(form);
+  const activeSources = computeActiveSources(form);
+  const withTerms = sourcesWithTerms(form);
   const checks = checklist(form, activeSources);
   const ready = checks.every((c) => c.ok);
   const commandLines = faroCommandLines({ ...form, sources: activeSources });
@@ -110,6 +111,19 @@ export default function ProfileView({ mode, profileState, saving, onSave, onCrea
   }, [dirty]);
 
   const set = (key) => (value) => setForm((f) => ({ ...f, [key]: value }));
+
+  // Mantém a ordem canônica das fontes: ligar e desligar de volta não deixa o
+  // formulário "sujo" só por mudar a ordem.
+  const toggleSource = (id) => (on) =>
+    setForm((f) => ({
+      ...f,
+      enabled_sources: SOURCES.map((s) => s.id).filter((s) => (s === id ? on : f.enabled_sources.includes(s))),
+    }));
+
+  const sourceStatus = (id) => {
+    if (!form.enabled_sources.includes(id)) return "DESLIGADA";
+    return withTerms.includes(id) ? "ATIVA" : "SEM STACK";
+  };
 
   const submit = async (e) => {
     e.preventDefault();
@@ -234,12 +248,18 @@ export default function ProfileView({ mode, profileState, saving, onSave, onCrea
           <Card number="04" title="Fontes" description="Onde o jobhound vai farejar.">
             <div className={styles.sources}>
               {SOURCES.map((s) => (
-                <SourceCard key={s.id} name={s.name} description={s.description} checked={activeSources.includes(s.id)} disabled />
+                <SourceCard
+                  key={s.id}
+                  name={s.name}
+                  description={s.description}
+                  checked={form.enabled_sources.includes(s.id)}
+                  onChange={toggleSource(s.id)}
+                  status={sourceStatus(s.id)}
+                />
               ))}
             </div>
             <p className={styles.note}>
-              Por enquanto as fontes ligam sozinhas a partir da stack. Escolher fonte por perfil depende de uma mudança no
-              backend.
+              Os termos de busca de cada fonte vêm da stack. Fonte ligada sem stack que a alimente fica de fora do faro.
             </p>
           </Card>
         </div>
