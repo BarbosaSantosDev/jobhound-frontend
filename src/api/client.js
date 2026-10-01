@@ -10,7 +10,10 @@
 //   GET   /api/v1/profiles/{slug}                   → 200 | 404
 //   PUT   /api/v1/profiles/{slug}                   → 200 | 404
 
-export const API_BASE = (process.env.REACT_APP_API_URL || "http://localhost:8000").replace(/\/+$/, "");
+// Vazio = mesma origem: em desenvolvimento o proxy do CRA (src/setupProxy.js)
+// encaminha /api para o backend. Defina REACT_APP_API_URL só quando o build
+// for servido num host diferente da API.
+export const API_BASE = (process.env.REACT_APP_API_URL || "").replace(/\/+$/, "");
 const API = `${API_BASE}/api/v1`;
 
 export class ApiError extends Error {

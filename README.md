@@ -26,12 +26,22 @@ completo (perfil → busca nas fontes → extração via LLM → pontuação →
 
 ```bash
 npm install
-cp .env.example .env.local   # aponte REACT_APP_API_URL se o backend não estiver em localhost:8000
+cp .env.example .env.local   # ajuste JOBHOUND_API_PROXY se a API não estiver em localhost:8000
 npm start
 ```
 
 Abre em `http://localhost:3000`. Precisa do backend rodando (veja o README do
 repositório da API).
+
+Em desenvolvimento, o `npm start` faz proxy de `/api` para a API
+(`src/setupProxy.js`, alvo em `JOBHOUND_API_PROXY`). O navegador só fala com a
+própria origem, então não há CORS: funciona por `localhost`, `127.0.0.1`, pelo IP
+da rede ou em outra porta (3001, se a 3000 estiver ocupada). Mudou o `.env.local`?
+Reinicie o `npm start`.
+
+Para um build de produção servido num host diferente da API, defina
+`REACT_APP_API_URL` com a URL absoluta do backend (e libere essa origem em
+`CORS_ORIGINS` no backend).
 
 ## Testes e lint
 
