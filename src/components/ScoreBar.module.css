@@ -1,0 +1,35 @@
+.wrap {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 48px;
+}
+
+.value {
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--text-2);
+}
+
+.track {
+  display: block;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--subtle);
+  overflow: hidden;
+}
+
+.fill {
+  display: block;
+  height: 100%;
+  background: var(--muted);
+}
+
+.high .value {
+  color: var(--accent-text);
+}
+
+.high .fill {
+  background: var(--accent);
+}

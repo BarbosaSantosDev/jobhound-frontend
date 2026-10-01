@@ -1,0 +1,25 @@
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.wordmark {
+  display: inline-flex;
+  align-items: flex-end;
+  font-family: var(--font-ui);
+  font-weight: 800;
+  font-size: 26px;
+  line-height: 1;
+  letter-spacing: -0.045em;
+  color: var(--text);
+}
+
+.cursor {
+  display: inline-block;
+  width: 0.32em;
+  height: 0.72em;
+  margin-left: 0.06em;
+  margin-bottom: 0.02em;
+  background: var(--accent);
+}

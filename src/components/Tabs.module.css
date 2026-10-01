@@ -1,0 +1,50 @@
+.tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--touch);
+  padding: 0 4px;
+  margin-right: 18px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tab:hover:not(:disabled) {
+  color: var(--text);
+}
+
+.tab:disabled {
+  opacity: 0.55;
+}
+
+.selected {
+  color: var(--text);
+  font-weight: 800;
+  border-bottom-color: var(--accent);
+}
+
+.count {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+/* o tablist corta o que vaza (overflow), então o foco fica para dentro */
+.tab:focus-visible {
+  outline-offset: -2px;
+}

@@ -1,0 +1,305 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 28px;
+  border-bottom: 1px solid var(--line);
+}
+
+.search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  max-width: 560px;
+  min-height: var(--touch);
+  padding: 0 10px 0 14px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.search:focus-within {
+  border-color: var(--accent);
+}
+
+.prompt {
+  color: var(--accent-text);
+  font-weight: 700;
+}
+
+.searchInput {
+  flex: 1;
+  min-width: 0;
+  min-height: 40px;
+  border: 0;
+  background: transparent;
+  font-size: 15px;
+}
+
+.searchInput::placeholder {
+  color: var(--muted);
+}
+
+.searchInput:focus-visible {
+  outline: none;
+}
+
+/* o "×" nativo foge da paleta; Esc limpa a busca */
+.searchInput::-webkit-search-cancel-button {
+  display: none;
+}
+
+.run {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.lastRun {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: 13px;
+  color: var(--text-2);
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+.lastRunLabel {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.failed {
+  color: var(--alert);
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px 28px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.titleRow {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+}
+
+.title {
+  font-size: 40px;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+}
+
+.summary {
+  color: var(--text-2);
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.split {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 400px 1fr;
+}
+
+.list {
+  margin: 0;
+  padding: 12px;
+  list-style: none;
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.detail {
+  padding: 28px 36px 48px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  min-height: var(--touch);
+  margin: -12px 0 8px -8px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--text-2);
+  font-weight: 600;
+}
+
+.error {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 28px;
+  padding: 20px 22px;
+  border-radius: var(--radius-card);
+  border: 1px solid var(--alert);
+  background: var(--surface);
+  color: var(--alert);
+}
+
+.error > div {
+  flex: 1;
+  min-width: 220px;
+}
+
+.errorTitle {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.errorText {
+  color: var(--text-2);
+}
+
+.noResults {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 32px 28px;
+  color: var(--text-2);
+}
+
+.skeletonItem {
+  display: flex;
+  gap: 18px;
+  padding: 16px 14px;
+}
+
+.skeletonLines {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skeleton {
+  display: block;
+  border-radius: 6px;
+  background: var(--subtle);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* desktop: topo fixo, lista e detalhe rolam cada um por conta própria */
+@media (min-width: 900px) {
+  .page {
+    height: 100vh;
+    min-height: 0;
+  }
+
+  .panel {
+    min-height: 0;
+  }
+
+  .split {
+    min-height: 0;
+  }
+
+  .list,
+  .detail {
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 1100px) {
+  .split {
+    grid-template-columns: 340px 1fr;
+  }
+}
+
+@media (max-width: 899px) {
+  .topbar {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 12px 16px;
+  }
+
+  .search {
+    max-width: none;
+  }
+
+  .run {
+    justify-content: space-between;
+  }
+
+  .lastRun {
+    align-items: flex-start;
+  }
+
+  .header {
+    padding: 18px 16px 14px;
+  }
+
+  .title {
+    font-size: 32px;
+  }
+
+  .split {
+    grid-template-columns: 1fr;
+  }
+
+  .list {
+    border-right: 0;
+    padding: 8px;
+  }
+
+  /* uma coluna: mostra a lista ou o detalhe */
+  .split .detail {
+    display: none;
+    padding: 20px 16px 40px;
+  }
+
+  .showDetail .list {
+    display: none;
+  }
+
+  .showDetail .detail {
+    display: flex;
+  }
+
+  .error {
+    margin: 16px;
+  }
+}
