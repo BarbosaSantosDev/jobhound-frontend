@@ -36,9 +36,12 @@ export function formatDateTime(iso) {
 export function initials(name) {
   const parts = (name || "").trim().split(/\s+/).filter(Boolean);
   if (!parts.length) return "?";
-  const first = parts[0][0];
-  const last = parts.length > 1 ? parts[parts.length - 1][0] : "";
-  return (first + last).toUpperCase();
+  // primeiro e segundo nome, como no seletor de perfil ("João Vitor" → JV)
+  return parts
+    .slice(0, 2)
+    .map((p) => p[0])
+    .join("")
+    .toUpperCase();
 }
 
 // Espelha Profile._slugify do backend — só para mostrar o slug que será gerado
@@ -46,7 +49,7 @@ export function initials(name) {
 export function slugify(name) {
   return (name || "")
     .normalize("NFKD")
-    .replace(/[̀-ͯ]/g, "")
+    .replace(/[\u0300-\u036f]/g, "")
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
