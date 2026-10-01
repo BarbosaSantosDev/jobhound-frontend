@@ -11,13 +11,14 @@ completo (perfil → busca nas fontes → extração via LLM → pontuação →
 
 ## O que tem aqui
 
-- **Vagas** — lista das vagas farejadas, com score, motivos e filtro
-  (todas / na trilha / revisar).
-- **Perfil** — edição do perfil (stack, senioridade, localização, aceita
-  remoto). Os termos de busca em cada fonte são derivados automaticamente da
-  sua stack — não é um campo editável.
-- **Novo perfil** — registro de um perfil novo, sem afetar o que já está
-  carregado.
+- **Vagas** — caixa de triagem: busca (`/`), abas por etapa, filtros, lista
+  com score e detalhe com o match e o porquê. Atalhos: `S` salvar,
+  `C` candidatei, `X` descartar, `↑ ↓` navegam.
+- **Perfil de caça** — quem sou, stack, onde e fontes, com uma prévia ao vivo
+  do comando de faro e um checklist. O mesmo formulário registra um perfil
+  novo ("+ Novo perfil" no seletor da sidebar).
+- Tema claro/escuro: segue o sistema na primeira visita; depois vale a escolha
+  salva no navegador.
 - Atualização em segundo plano: a tela consulta a API a cada poucos segundos,
   então vagas/matches novos aparecem sozinhos, sem precisar recarregar.
 
@@ -32,6 +33,13 @@ npm start
 Abre em `http://localhost:3000`. Precisa do backend rodando (veja o README do
 repositório da API).
 
+## Testes e lint
+
+```bash
+npm test                 # Jest + Testing Library
+npx eslint --ext .js,.jsx src
+```
+
 ## Build de produção
 
 ```bash
@@ -40,5 +48,18 @@ npm run build
 
 ## Stack
 
-Create React App (react-scripts 5), React 19, sem bibliotecas de UI externas
-— tudo em CSS-in-JS inline, com tema dark/light.
+Create React App (react-scripts 5), React 19, sem bibliotecas de UI externas.
+Identidade "Âmbar fósforo": tokens em `src/theme/tokens.css` (aplicados via
+`data-theme="claro|escuro"` no `<html>`), CSS Modules por componente,
+Bricolage Grotesque + JetBrains Mono self-hosted via `@fontsource` e ícones
+em SVG inline.
+
+```
+src/
+├── api/         # cliente HTTP (REACT_APP_API_URL) e adaptadores da API
+├── components/  # Button, ChipInput, Segmented, Switch, SourceCard, JobListItem, JobDetail, Logo...
+├── layout/      # AppShell: sidebar fixa / drawer abaixo de 900px
+├── lib/         # funções puras e hooks (prévia do faro, atalhos, formatação)
+├── theme/       # tokens, CSS global e useTheme
+└── views/       # JobsView e ProfileView
+```
