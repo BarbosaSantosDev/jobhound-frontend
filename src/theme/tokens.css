@@ -1,0 +1,62 @@
+/* ─────────────────────────────────────────────────────────────
+   jobhound · identidade "Âmbar fósforo"
+   Único arquivo de tokens. O tema é aplicado via data-theme no <html>
+   (ver src/theme/theme.js e o script inline em public/index.html).
+   ───────────────────────────────────────────────────────────── */
+
+:root {
+  --font-ui: "Bricolage Grotesque", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --radius-control: 10px; /* botões e inputs */
+  --radius-item: 12px; /* itens de lista */
+  --radius-card: 16px; /* cards */
+
+  --sidebar-width: 236px;
+  --touch: 44px;
+
+  /* "Prévia do faro": sempre escuro, nos dois temas */
+  --faro-bg: #0b0a08;
+  --faro-text: #ede6d8;
+  --faro-muted: #9c9385;
+  --faro-accent: #ffb000;
+}
+
+:root,
+[data-theme="escuro"] {
+  color-scheme: dark;
+  --bg: #14120f;
+  --side: #0b0a08;
+  --surface: #1f1c18;
+  --subtle: #2a2621;
+  --line: #3a352e;
+  --text: #ede6d8;
+  --text-2: #c9c0b0;
+  --muted: #9c9385;
+  --accent: #ffb000;
+  --accent-text: #ffb000;
+  --on-accent: #14120f;
+  --selected-bg: #2a2219;
+  --alert: #ff6b5a;
+  --shadow: none;
+  --logo-ear: #b9ae9a;
+}
+
+[data-theme="claro"] {
+  color-scheme: light;
+  --bg: #f7f3ea;
+  --side: #efe8da;
+  --surface: #ffffff;
+  --subtle: #e8e0d0;
+  --line: #ddd3c2;
+  --text: #14120f;
+  --text-2: #4a443c;
+  --muted: #6b6358;
+  --accent: #ffb000;
+  --accent-text: #a35f00;
+  --on-accent: #14120f;
+  --selected-bg: #fff4da;
+  --alert: #b42318;
+  --shadow: 0 1px 2px rgba(20, 18, 15, 0.06);
+  --logo-ear: #6b6358;
+}
